@@ -27,6 +27,8 @@
 
 /* Begin PBXFileReference section */
 		134814201AA4EA6300B7C361 /* libBleManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBleManager.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A33CDAFA269FA1D300ACD670 /* HingeSensor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HingeSensor.h; sourceTree = "<group>"; };
+		A33CDAFB269FA2C900ACD670 /* HingeSensorsPair.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HingeSensorsPair.h; sourceTree = "<group>"; };
 		A908F18A1CEEFEB500BE1488 /* NSData+Conversion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+Conversion.h"; sourceTree = "<group>"; };
 		A908F18B1CEEFEB500BE1488 /* NSData+Conversion.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+Conversion.m"; sourceTree = "<group>"; };
 		A908F18C1CEEFEB500BE1488 /* CBPeripheral+Extensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CBPeripheral+Extensions.h"; sourceTree = "<group>"; };
@@ -64,9 +66,27 @@
 			);
 			sourceTree = "<group>";
 		};
+		A33CDAF8269FA18100ACD670 /* hinge-health */ = {
+			isa = PBXGroup;
+			children = (
+				A33CDAF9269FA19E00ACD670 /* Models */,
+			);
+			path = "hinge-health";
+			sourceTree = "<group>";
+		};
+		A33CDAF9269FA19E00ACD670 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A33CDAFA269FA1D300ACD670 /* HingeSensor.h */,
+				A33CDAFB269FA2C900ACD670 /* HingeSensorsPair.h */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
 		A908F1891CEEFE0F00BE1488 /* BleManager */ = {
 			isa = PBXGroup;
 			children = (
+				A33CDAF8269FA18100ACD670 /* hinge-health */,
 				A908F18A1CEEFEB500BE1488 /* NSData+Conversion.h */,
 				A908F18B1CEEFEB500BE1488 /* NSData+Conversion.m */,
 				A908F18C1CEEFEB500BE1488 /* CBPeripheral+Extensions.h */,
@@ -106,7 +126,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0800;
-				ORGANIZATIONNAME = Facebook;
+				ORGANIZATIONNAME = "Hinge Health";
 				TargetAttributes = {
 					58B511DA1A9E6C8500147676 = {
 						CreatedOnToolsVersion = 6.1.1;
@@ -118,6 +138,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 58B511D21A9E6C8500147676;
