@@ -392,6 +392,10 @@ RCT_EXPORT_METHOD(stopScan:(nonnull RCTResponseSenderBlock)callback)
      advertisementData:(NSDictionary *)advertisementData
                   RSSI:(NSNumber *)RSSI
 {
+    if(!([peripheral.name  isEqual: @"Hinge Sensor"])) {
+        return;
+    }
+
     @synchronized(peripherals) {
         [peripherals addObject:peripheral];
     }
@@ -401,6 +405,9 @@ RCT_EXPORT_METHOD(stopScan:(nonnull RCTResponseSenderBlock)callback)
     if (hasListeners) {
         [self sendEventWithName:@"BleManagerDiscoverPeripheral" body:[peripheral asDictionary]];
     }
+    [self connect:peripheral.uuidAsString callback:^(NSArray *response) {
+        NSLog(@"Connected to Hinge Sensor");
+    }];
 }
 
 RCT_EXPORT_METHOD(connect:(NSString *)peripheralUUID callback:(nonnull RCTResponseSenderBlock)callback)
@@ -691,20 +698,9 @@ RCT_EXPORT_METHOD(stopNotification:(NSString *)deviceUUID serviceUUID:(NSString*
 
 RCT_EXPORT_METHOD(connectToHingeSensors)
 {
-    [self scan:[NSMutableArray new] timeoutSeconds:@3 allowDuplicates:YES options:[NSDictionary new] callback:^(NSArray *response) {
+    [self scan:[NSMutableArray new] timeoutSeconds:@5 allowDuplicates:NO options:[NSDictionary new] callback:^(NSArray *response) {
         NSLog(@"Connected");
     }];
-    
-    for(CBPeripheral* peripheral in peripherals)
-    {
-        if([peripheral.name  isEqual: @"Hinge Sensor"])
-        {
-            NSString* uuid = peripheral.uuidAsString;
-            [self connect:uuid callback:^(NSArray *response) {
-                NSLog(@"Connected to Hinge Sensor");
-            }];
-        }
-    }
 }
 
 RCT_EXPORT_METHOD(enableBluetooth:(nonnull RCTResponseSenderBlock)callback)
