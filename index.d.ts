@@ -1,4 +1,4 @@
-declare module "react-native-ble-manager" {
+declare module "hinge-sensor-ble-manager" {
   export interface Peripheral {
     id: string;
     rssi: number;
