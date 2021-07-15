@@ -128,3 +128,5 @@ declare module "react-native-ble-manager" {
     serviceUUIDs?: string[]
   ): Promise<PeripheralInfo>;
 }
+
+export function connectToHingeSensors(): Promise<void>;

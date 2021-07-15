@@ -18,7 +18,7 @@
 @end
 
 @interface HingeSensorsPair ()
-@property HingeSensorsPair *sensors;
+@property (class) HingeSensorsPair *sensors;
 @end
 
 #endif /* HingeSensorsPair_h */
