@@ -1,15 +1,15 @@
 {
-  "name": "react-native-ble-manager",
+  "name": "hinge-ble-sensor-manager",
   "version": "7.6.0",
   "description": "A BLE module for react native.",
   "main": "BleManager",
   "types": "./index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/innoveit/react-native-ble-manager.git"
+    "url": "https://github.com/hinge-health/hinge-ble-sensor-manager.git"
   },
   "bugs": {
-    "url": "https://github.com/innoveit/react-native-ble-manager/issues"
+    "url": "https://github.com/hinge-health/hinge-ble-sensor-manager/issues"
   },
   "keywords": [
     "react-native",
@@ -19,10 +19,10 @@
     "bluetooth",
     "low energy"
   ],
-  "license": "Apache-2.0",
+  "license": "PRIVATE",
   "author": {
-    "name": "Innove",
-    "url": "https://github.com/innoveit"
+    "name": "Hinge Health",
+    "url": "https://github.com/hinge-health"
   },
   "scripts": {
     "version": "git add -A",
