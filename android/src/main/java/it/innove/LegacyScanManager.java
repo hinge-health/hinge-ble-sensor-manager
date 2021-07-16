@@ -34,12 +34,14 @@ public class LegacyScanManager extends ScanManager {
 							Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
 
               if (device.getName() == "Hinge Sensor") {
+
                 Peripheral peripheral = bleManager.getPeripheral(device);
                 peripheral.updateData(scanRecord);
                 peripheral.updateRssi(rssi);
                 bleManager.savePeripheral(peripheral);
 
                 WritableMap map = peripheral.asWritableMap();
+				  Log.i(bleManager.LOG_TAG, "Device: " + map);
                 bleManager.sendEvent("BleManagerDiscoverPeripheral", map);
               } else return;
 						}
