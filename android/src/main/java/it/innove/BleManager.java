@@ -593,10 +593,13 @@ class BleManager extends ReactContextBaseJavaModule {
     @ReactMethod
     public void getDiscoveredPeripherals(Callback callback) {
         Log.d(LOG_TAG, "Get discovered peripherals");
+        Log.w(LOG_TAG, "Get discovered peripherals");
+
         WritableArray map = Arguments.createArray();
         synchronized (peripherals) {
             for (Map.Entry<String, Peripheral> entry : peripherals.entrySet()) {
                 Peripheral peripheral = entry.getValue();
+                Log.w(LOG_TAG, peripheral.getDevice().getName());
                 WritableMap jsonBundle = peripheral.asWritableMap();
                 map.pushMap(jsonBundle);
             }

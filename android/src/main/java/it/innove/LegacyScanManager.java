@@ -32,6 +32,7 @@ public class LegacyScanManager extends ScanManager {
 						@Override
 						public void run() {
 							Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
+							Log.w(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
 
                             Peripheral peripheral = bleManager.getPeripheral(device);
                             if (peripheral == null) {
