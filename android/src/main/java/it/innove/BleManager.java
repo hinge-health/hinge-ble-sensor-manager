@@ -25,6 +25,8 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
+import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.RCTNativeAppEventEmitter;
@@ -175,6 +177,115 @@ class BleManager extends ReactContextBaseJavaModule {
         } else
             callback.invoke();
     }
+
+    @ReactMethod
+    public void connectToHingeSensors() {
+        ReadableArray arr = new ReadableArray() {
+            @Override
+            public int size() {
+                return 0;
+            }
+
+            @Override
+            public boolean isNull(int index) {
+                return false;
+            }
+
+            @Override
+            public boolean getBoolean(int index) {
+                return false;
+            }
+
+            @Override
+            public double getDouble(int index) {
+                return 0;
+            }
+
+            @Override
+            public int getInt(int index) {
+                return 0;
+            }
+
+            @Override
+            public String getString(int index) {
+                return null;
+            }
+
+            @Override
+            public ReadableArray getArray(int index) {
+                return null;
+            }
+
+            @Override
+            public ReadableMap getMap(int index) {
+                return null;
+            }
+
+            @Override
+            public ReadableType getType(int index) {
+                return null;
+            }
+        };
+        ReadableMap map = new ReadableMap() {
+            @Override
+            public boolean hasKey(String name) {
+                return false;
+            }
+
+            @Override
+            public boolean isNull(String name) {
+                return false;
+            }
+
+            @Override
+            public boolean getBoolean(String name) {
+                return false;
+            }
+
+            @Override
+            public double getDouble(String name) {
+                return 0;
+            }
+
+            @Override
+            public int getInt(String name) {
+                return 0;
+            }
+
+            @Override
+            public String getString(String name) {
+                return null;
+            }
+
+            @Override
+            public ReadableArray getArray(String name) {
+                return null;
+            }
+
+            @Override
+            public ReadableMap getMap(String name) {
+                return null;
+            }
+
+            @Override
+            public ReadableType getType(String name) {
+                return null;
+            }
+
+            @Override
+            public ReadableMapKeySetIterator keySetIterator() {
+                return null;
+            }
+        };
+        Callback cb = new Callback() {
+            @Override
+            public void invoke(Object... args) {
+
+            }
+        };
+        scan(arr, 10, true, map, cb);
+    }
+
 
     @ReactMethod
     public void scan(ReadableArray serviceUUIDs, final int scanSeconds, boolean allowDuplicates, ReadableMap options,
@@ -593,10 +704,13 @@ class BleManager extends ReactContextBaseJavaModule {
     @ReactMethod
     public void getDiscoveredPeripherals(Callback callback) {
         Log.d(LOG_TAG, "Get discovered peripherals");
+        Log.w(LOG_TAG, "Get discovered peripherals");
+
         WritableArray map = Arguments.createArray();
         synchronized (peripherals) {
             for (Map.Entry<String, Peripheral> entry : peripherals.entrySet()) {
                 Peripheral peripheral = entry.getValue();
+                Log.w(LOG_TAG, peripheral.getDevice().getName());
                 WritableMap jsonBundle = peripheral.asWritableMap();
                 map.pushMap(jsonBundle);
             }
