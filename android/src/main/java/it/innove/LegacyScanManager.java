@@ -32,22 +32,19 @@ public class LegacyScanManager extends ScanManager {
 						@Override
 						public void run() {
 							Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
-							Log.w(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
 
-                            Peripheral peripheral = bleManager.getPeripheral(device);
-                            if (peripheral == null) {
-                            	peripheral = new Peripheral(device, rssi, scanRecord, bleManager.getReactContext());
-							} else {
-                            	peripheral.updateData(scanRecord);
-                            	peripheral.updateRssi(rssi);
-							}
-                            bleManager.savePeripheral(peripheral);
+              if (device.getName() == "Hinge Sensor") {
+                Peripheral peripheral = bleManager.getPeripheral(device);
+                peripheral.updateData(scanRecord);
+                peripheral.updateRssi(rssi);
+                bleManager.savePeripheral(peripheral);
 
-							WritableMap map = peripheral.asWritableMap();
-							bleManager.sendEvent("BleManagerDiscoverPeripheral", map);
+                WritableMap map = peripheral.asWritableMap();
+                bleManager.sendEvent("BleManagerDiscoverPeripheral", map);
+              } else return;
 						}
-					});
-				}
+			});
+		}
 
 
 			};
