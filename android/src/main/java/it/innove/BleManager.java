@@ -180,117 +180,16 @@ class BleManager extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void connectToHingeSensors() {
-        ReadableArray arr = new ReadableArray() {
-            @Override
-            public int size() {
-                return 0;
-            }
-
-            @Override
-            public boolean isNull(int index) {
-                return false;
-            }
-
-            @Override
-            public boolean getBoolean(int index) {
-                return false;
-            }
-
-            @Override
-            public double getDouble(int index) {
-                return 0;
-            }
-
-            @Override
-            public int getInt(int index) {
-                return 0;
-            }
-
-            @Override
-            public String getString(int index) {
-                return null;
-            }
-
-            @Override
-            public ReadableArray getArray(int index) {
-                return null;
-            }
-
-            @Override
-            public ReadableMap getMap(int index) {
-                return null;
-            }
-
-            @Override
-            public ReadableType getType(int index) {
-                return null;
-            }
-        };
-        ReadableMap map = new ReadableMap() {
-            @Override
-            public boolean hasKey(String name) {
-                return false;
-            }
-
-            @Override
-            public boolean isNull(String name) {
-                return false;
-            }
-
-            @Override
-            public boolean getBoolean(String name) {
-                return false;
-            }
-
-            @Override
-            public double getDouble(String name) {
-                return 0;
-            }
-
-            @Override
-            public int getInt(String name) {
-                return 0;
-            }
-
-            @Override
-            public String getString(String name) {
-                return null;
-            }
-
-            @Override
-            public ReadableArray getArray(String name) {
-                return null;
-            }
-
-            @Override
-            public ReadableMap getMap(String name) {
-                return null;
-            }
-
-            @Override
-            public ReadableType getType(String name) {
-                return null;
-            }
-
-            @Override
-            public ReadableMapKeySetIterator keySetIterator() {
-                return null;
-            }
-        };
-        Callback cb = new Callback() {
-            @Override
-            public void invoke(Object... args) {
-
-            }
-        };
-        scan(arr, 10, true, map, cb);
+        WritableMap map = Arguments.createMap();
+        WritableMap map2 = Arguments.createMap();
+        this.scan((ReadableArray) map, 10, false, map2, null);
     }
-
 
     @ReactMethod
     public void scan(ReadableArray serviceUUIDs, final int scanSeconds, boolean allowDuplicates, ReadableMap options,
                      Callback callback) {
         Log.d(LOG_TAG, "scan");
+        Log.d(LOG_TAG, "Luis Log Started");
         if (getBluetoothAdapter() == null) {
             Log.d(LOG_TAG, "No bluetooth support");
             callback.invoke("No bluetooth support");
@@ -304,6 +203,9 @@ class BleManager extends ReactContextBaseJavaModule {
             for (Iterator<Map.Entry<String, Peripheral>> iterator = peripherals.entrySet().iterator(); iterator
                     .hasNext(); ) {
                 Map.Entry<String, Peripheral> entry = iterator.next();
+                Log.d(LOG_TAG, "Luis Device 1: " + entry.getValue());
+                Log.d(LOG_TAG, "Luis Device 2: " + entry.getValue().getDevice());
+                Log.d(LOG_TAG, entry.getValue().getDevice().getName());
                 if (!entry.getValue().isConnected()) {
                     iterator.remove();
                 }

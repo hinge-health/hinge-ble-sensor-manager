@@ -2,8 +2,10 @@ package it.innove;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.os.ParcelUuid;
 import android.util.Log;
 import com.facebook.react.bridge.*;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
 
 import static com.facebook.react.bridge.UiThreadUtil.runOnUiThread;
 
@@ -31,25 +33,55 @@ public class LegacyScanManager extends ScanManager {
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
+							Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());						Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
+							Log.d(bleManager.LOG_TAG, "Luis Log "+ device.getName());
+							if (device.getName() != "Hinge Sensor") return;
 
-              if (device.getName() == "Hinge Sensor") {
+							Peripheral peripheral = bleManager.getPeripheral(device);
+							if (peripheral == null) {
+								peripheral = new Peripheral(device, rssi, scanRecord, bleManager.getReactContext());
+							} else {
+								peripheral.updateData(scanRecord);
+								peripheral.updateRssi(rssi);
+							}
+							bleManager.savePeripheral(peripheral);
+
+							WritableMap map = peripheral.asWritableMap();
+							bleManager.sendEvent("BleManagerDiscoverPeripheral", map);
+						}
+					});
+				}
+
+
+			};
+
+				public void onLeScan(final BluetoothDevice device, final int rssi,
+									 final byte[] scanRecord, final Callback callback) {
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
+							Log.d(bleManager.LOG_TAG, "Luis Log "+ device.getName());
+							if (device.getName() != "Hinge Sensor") return;
 
                 Peripheral peripheral = bleManager.getPeripheral(device);
                 peripheral.updateData(scanRecord);
                 peripheral.updateRssi(rssi);
                 bleManager.savePeripheral(peripheral);
 
+
+                ParcelUuid[] uuids = device.getUuids();
+
                 WritableMap map = peripheral.asWritableMap();
 				  Log.i(bleManager.LOG_TAG, "Device: " + map);
                 bleManager.sendEvent("BleManagerDiscoverPeripheral", map);
-              } else return;
-						}
+				for (ParcelUuid uuid : uuids) {
+					bleManager.connect(uuid.getUuid().toString(), callback);
+				}
+				}
 			});
 		}
-
-
-			};
+	};
 
 	@Override
 	public void scan(ReadableArray serviceUUIDs, final int scanSeconds, ReadableMap options, Callback callback) {
