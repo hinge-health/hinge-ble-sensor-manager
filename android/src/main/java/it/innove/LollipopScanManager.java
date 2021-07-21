@@ -109,7 +109,7 @@ public class LollipopScanManager extends ScanManager {
 				    Log.d(bleManager.LOG_TAG, "Luis Lollopop log");
 					Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + result.getDevice().getName());
 
-					if (result.getDevice().getName() != null && !result.getDevice().getName().isEmpty()) return;
+					if (result.getDevice().getName() != null) return;
 					if (!result.getDevice().getName().equals("Hinge Sensor")) return;
 
                     LollipopPeripheral peripheral = (LollipopPeripheral) bleManager.getPeripheral(result.getDevice());
