@@ -34,10 +34,10 @@ public class LegacyScanManager extends ScanManager {
 
 				Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + device.getName());
 
-				if (device.getName() != null) return;
-				if (!device.getName().equals("Hinge Sensor")) return;
+				String deviceName = device.getName();
 
-
+				if (deviceName != null) return;
+				if (!deviceName.equals("Hinge Sensor")) return;
 
 							Peripheral peripheral = bleManager.getPeripheral(device);
 				peripheral.updateData(scanRecord);
