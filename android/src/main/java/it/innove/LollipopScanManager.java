@@ -111,7 +111,7 @@ public class LollipopScanManager extends ScanManager {
 
 					BluetoothDevice deviceName = result.getDevice();
 
-					if (deviceName == null) return;
+					if (result == null) return;
                     Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + result.getDevice().getName());
                     if (!deviceName.getName().equals("Hinge Sensor")) return;
 
