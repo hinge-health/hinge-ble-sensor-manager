@@ -2,6 +2,7 @@ package it.innove;
 
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
@@ -107,14 +108,14 @@ public class LollipopScanManager extends ScanManager {
 				@Override
 				public void run() {
 				    Log.d(bleManager.LOG_TAG, "Luis Lollopop log");
-					Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + result.getDevice().getName());
+//					Log.i(bleManager.LOG_TAG, "DiscoverPeripheral: " + result.getDevice().getName());
 
-					String deviceName = result.getDevice().getName();
+					BluetoothDevice deviceName = result.getDevice();
 
-					Log.d("device name => ", deviceName);
+//					Log.d("device name => ", deviceName.toString());
 
 					if (deviceName != null) return;
-					if (!deviceName.equals("Hinge Sensor")) return;
+					if (!deviceName.getName().equals("Hinge Sensor")) return;
 
                     LollipopPeripheral peripheral = (LollipopPeripheral) bleManager.getPeripheral(result.getDevice());
                     if (peripheral == null) {
