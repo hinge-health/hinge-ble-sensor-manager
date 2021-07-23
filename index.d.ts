@@ -128,3 +128,5 @@ declare module "hinge-sensor-ble-manager" {
     serviceUUIDs?: string[]
   ): Promise<PeripheralInfo>;
 }
+
+export function connectToHingeSensors(): Promise<void>;

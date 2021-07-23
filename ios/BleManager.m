@@ -11,7 +11,6 @@ static BleManager * _instance = nil;
 
 @implementation BleManager
 
-
 RCT_EXPORT_MODULE();
 
 @synthesize manager;
@@ -299,7 +298,7 @@ RCT_EXPORT_METHOD(start:(NSDictionary *)options callback:(nonnull RCTResponseSen
     
     dispatch_queue_t queue;
     if ([[options allKeys] containsObject:@"queueIdentifierKey"]) {
-	dispatch_queue_attr_t queueAttributes = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_BACKGROUND, 0);
+    dispatch_queue_attr_t queueAttributes = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_BACKGROUND, 0);
         queue = dispatch_queue_create([[options valueForKey:@"queueIdentifierKey"] UTF8String], queueAttributes);
     } else {
         queue = dispatch_get_main_queue();
@@ -393,6 +392,10 @@ RCT_EXPORT_METHOD(stopScan:(nonnull RCTResponseSenderBlock)callback)
      advertisementData:(NSDictionary *)advertisementData
                   RSSI:(NSNumber *)RSSI
 {
+    if(!([peripheral.name  isEqual: @"Hinge Sensor"])) {
+        return;
+    }
+
     @synchronized(peripherals) {
         [peripherals addObject:peripheral];
     }
@@ -402,6 +405,9 @@ RCT_EXPORT_METHOD(stopScan:(nonnull RCTResponseSenderBlock)callback)
     if (hasListeners) {
         [self sendEventWithName:@"BleManagerDiscoverPeripheral" body:[peripheral asDictionary]];
     }
+    [self connect:peripheral.uuidAsString callback:^(NSArray *response) {
+        NSLog(@"Connected to Hinge Sensor");
+    }];
 }
 
 RCT_EXPORT_METHOD(connect:(NSString *)peripheralUUID callback:(nonnull RCTResponseSenderBlock)callback)
@@ -570,7 +576,7 @@ RCT_EXPORT_METHOD(writeWithoutResponse:(NSString *)deviceUUID serviceUUID:(NSStr
                 
                 offset += thisChunkSize;
                 [peripheral writeValue:chunk forCharacteristic:characteristic type:CBCharacteristicWriteWithoutResponse];
-		NSTimeInterval sleepTimeSeconds = (NSTimeInterval) queueSleepTime / 1000;
+        NSTimeInterval sleepTimeSeconds = (NSTimeInterval) queueSleepTime / 1000;
                 [NSThread sleepForTimeInterval: sleepTimeSeconds];
             } while (offset < length);
             
@@ -688,6 +694,13 @@ RCT_EXPORT_METHOD(stopNotification:(NSString *)deviceUUID serviceUUID:(NSString*
         
     }
     
+}
+
+RCT_EXPORT_METHOD(connectToHingeSensors)
+{
+    [self scan:[NSMutableArray new] timeoutSeconds:@5 allowDuplicates:NO options:[NSDictionary new] callback:^(NSArray *response) {
+        NSLog(@"Connected");
+    }];
 }
 
 RCT_EXPORT_METHOD(enableBluetooth:(nonnull RCTResponseSenderBlock)callback)

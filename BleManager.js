@@ -410,6 +410,18 @@ class BleManager {
       });
     });
   }
+
+  connectToHingeSensors() {
+    return new Promise((fulfill, reject) => {
+      bleManager.connectToHingeSensors(error => {
+        if (error) {
+          reject(error);
+        } else {
+          fulfill();
+        }
+      })
+    })
+  }
 }
 
 module.exports = new BleManager();
