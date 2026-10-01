@@ -82,6 +82,14 @@ export interface StartOptions {
    */
   discoverIncludedServices?: boolean;
   /**
+   * [iOS only] Milliseconds after which a pending `retrieveServices` call is
+   * rejected with {@link BleManagerErrorCode.RetrieveServicesTimeout}. Each
+   * call restarts the timeout for its peripheral, and calls pending on the
+   * same peripheral settle together. By default there is no timeout and the
+   * call waits for CoreBluetooth to finish discovery.
+   */
+  retrieveServicesTimeout?: number;
+  /**
    * [Android only] Force to use the LegacyScanManager
    */
   forceLegacy?: boolean;
@@ -303,6 +311,11 @@ export enum BleManagerErrorCode {
    * Bluetooth is turned off and on.
    */
   StaleGattCache = 1,
+  /**
+   * `retrieveServices` was still pending when the `retrieveServicesTimeout`
+   * start option ran out.
+   */
+  RetrieveServicesTimeout = 2,
 }
 
 export type EventCallback<T> = (event: T) => void | Promise<void>;

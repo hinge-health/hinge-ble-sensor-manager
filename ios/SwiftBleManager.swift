@@ -56,6 +56,9 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
         // The attribute table iOS cached for the peripheral no longer matches
         // the device (see failRetrieveServicesForStaleGattCache).
         case staleGattCache = 1
+        // retrieveServices was still pending when the retrieveServicesTimeout
+        // start option ran out (see armRetrieveServicesTimeout).
+        case retrieveServicesTimeout = 2
     }
 
     private static func errorPayload(_ code: ErrorCode, message: String)
@@ -76,6 +79,14 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
     // included-services request also skips the second characteristic
     // discovery didDiscoverIncludedServicesFor starts for every service.
     private var discoverIncludedServices = true
+
+    // From the retrieveServicesTimeout start option, in seconds; nil leaves a
+    // pending retrieveServices waiting on CoreBluetooth for as long as it
+    // takes.
+    private var retrieveServicesTimeout: TimeInterval?
+    // One token per retrieveServices call, per peripheral, so a timer armed
+    // for an earlier call never fails a later one. Kept under serialQueue.
+    private var retrieveServicesAttempts = [String: Int]()
 
     @objc public init(bleManager: BleManager) {
         peripherals = [:]
@@ -351,6 +362,11 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
         discoverIncludedServices =
             options["discoverIncludedServices"] as? Bool ?? true
 
+        let timeoutMilliseconds =
+            options["retrieveServicesTimeout"] as? Double ?? 0
+        retrieveServicesTimeout =
+            timeoutMilliseconds > 0 ? timeoutMilliseconds / 1000 : nil
+
         var queue: DispatchQueue
         if let queueIdentifierKey = options["queueIdentifierKey"] as? String {
             queue = DispatchQueue(
@@ -588,12 +604,10 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
         if let peripheral = peripherals[peripheralUUID],
             peripheral.instance.state == .connected
         {
-            insertCallback(
-                callback,
-                intoDictionary: &retrieveServicesCallbacks,
-                withKey: peripheral.instance.uuidAsString()
-            )
-
+            // Validated before the callback is queued: a call rejected here
+            // but left queued would be called again when the next discovery
+            // on this peripheral settles, and React Native's TurboModule
+            // bridge treats a second call as fatal.
             var uuids: [CBUUID] = []
             for string in services {
                 // Validate UUID format to prevent CBUUID(string:) crash
@@ -606,14 +620,70 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
                 uuids.append(CBUUID(string: string))
             }
 
+            let key = peripheral.instance.uuidAsString()
+            // Queued and numbered in one step, so a timeout armed for an
+            // earlier call can tell that this one has started.
+            let attempt: Int = serialQueue.sync {
+                retrieveServicesCallbacks[key, default: []].append(callback)
+                let next = (retrieveServicesAttempts[key] ?? 0) + 1
+                retrieveServicesAttempts[key] = next
+                return next
+            }
+
             if !uuids.isEmpty {
                 peripheral.instance.discoverServices(uuids)
             } else {
                 peripheral.instance.discoverServices(nil)
             }
 
+            if let timeout = retrieveServicesTimeout {
+                armRetrieveServicesTimeout(
+                    forKey: key,
+                    attempt: attempt,
+                    after: timeout
+                )
+            }
+
         } else {
             callback(["Peripheral not found or not connected"])
+        }
+    }
+
+    // Rejects the retrieveServices calls still pending on a peripheral when
+    // the timeout armed by the latest of them runs out, so the JS promise
+    // settles instead of waiting on a discovery CoreBluetooth never
+    // completes. Each call restarts the timeout, and the calls pending on a
+    // peripheral settle together, as they do when discovery completes. Only
+    // the callbacks are answered; the latches belong to the delegate queue,
+    // and the next retrieveServices on the peripheral replaces its latch.
+    private func armRetrieveServicesTimeout(
+        forKey key: String,
+        attempt: Int,
+        after timeout: TimeInterval
+    ) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
+            [weak self] in
+            guard let self = self else { return }
+            let message =
+                "retrieveServices timed out after \(Int(timeout * 1000)) ms for peripheral \(key)"
+            // Checked and answered in one step, so a call queued in between
+            // is never failed by this older timer.
+            self.serialQueue.sync {
+                guard self.retrieveServicesAttempts[key] == attempt,
+                    self.retrieveServicesCallbacks[key] != nil
+                else { return }
+                NSLog("%@", message)
+                self.invokeAndClearDictionary_THREAD_UNSAFE(
+                    &self.retrieveServicesCallbacks,
+                    withKey: key,
+                    usingParameters: [
+                        SwiftBleManager.errorPayload(
+                            .retrieveServicesTimeout,
+                            message: message
+                        )
+                    ]
+                )
+            }
         }
     }
 
@@ -1771,7 +1841,8 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
         // can be gone by the time this event arrives, for example once the
         // attribute tree was invalidated. The event is ignored rather than
         // force-unwrapped, so the pending retrieveServices may not settle
-        // until the peripheral disconnects.
+        // until the peripheral disconnects or retrieveServicesTimeout runs
+        // out.
         guard let owningService = characteristic.service else {
             NSLog(
                 "Descriptors discovered for characteristic \(characteristic.uuid.uuidString) with no owning service; ignored"
