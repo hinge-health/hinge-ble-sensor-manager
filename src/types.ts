@@ -275,6 +275,27 @@ export interface PeripheralInfo extends Peripheral {
   services?: Service[];
 }
 
+/**
+ * [iOS only] `domain` of the structured errors the library raises itself, as
+ * opposed to errors passed on from CoreBluetooth: objects
+ * `{ code, domain, message }` whose `code` is a {@link BleManagerErrorCode}.
+ * The library's other errors are plain strings.
+ */
+export const BleManagerErrorDomain = 'BleManagerErrorDomain';
+
+/**
+ * [iOS only] `code` of the errors in {@link BleManagerErrorDomain}.
+ */
+export enum BleManagerErrorCode {
+  /**
+   * `retrieveServices` found that the attribute table iOS cached for the
+   * peripheral no longer matches the device. Discovering again on the same
+   * connection gives the same result; iOS reads the table again after
+   * Bluetooth is turned off and on.
+   */
+  StaleGattCache = 1,
+}
+
 export type EventCallback<T> = (event: T) => void | Promise<void>;
 
 export interface BleStopScanEvent {
