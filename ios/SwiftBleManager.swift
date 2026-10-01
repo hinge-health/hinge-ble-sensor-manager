@@ -1567,6 +1567,32 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
         )
     }
 
+    // CoreBluetooth passes each discovery delegate the attribute it resolved
+    // from the reply's handle, and Swift does not check that object's class
+    // at this boundary. With a stale attribute cache it can be an attribute
+    // of the wrong class. A reply without an error goes to that attribute's
+    // own handler first, and CoreBluetooth aborts there before any delegate
+    // runs; a reply that carries an error skips the handler and reaches the
+    // delegate with the object as it is. Reading a property only the expected
+    // class has, such as a characteristic's service on a CBService, then
+    // raises an unrecognized selector. So the class is checked through the
+    // runtime before anything else touches it, and discovery fails as stale.
+    private func failIfForeignAttribute(
+        _ attribute: NSObject,
+        expected: AnyClass,
+        peripheral: CBPeripheral,
+        location: String
+    ) -> Bool {
+        guard !attribute.isKind(of: expected) else { return false }
+        let actual = NSStringFromClass(type(of: attribute))
+        failRetrieveServicesForStaleGattCache(
+            peripheral,
+            location: "\(location) (delegate received \(actual))",
+            foreignClassNames: [actual]
+        )
+        return true
+    }
+
     public func peripheral(
         _ peripheral: CBPeripheral,
         didDiscoverServices error: Error?
@@ -1629,6 +1655,12 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
         didDiscoverIncludedServicesFor service: CBService,
         error: Error?
     ) {
+        if failIfForeignAttribute(
+            service, expected: CBService.self, peripheral: peripheral,
+            location: "included services"
+        ) {
+            return
+        }
         if let error = error {
             NSLog("Error: \(error)")
             return
@@ -1644,6 +1676,12 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
         didDiscoverCharacteristicsFor service: CBService,
         error: Error?
     ) {
+        if failIfForeignAttribute(
+            service, expected: CBService.self, peripheral: peripheral,
+            location: "characteristics"
+        ) {
+            return
+        }
         if let error = error {
             NSLog("Error: \(error)")
         }
@@ -1709,12 +1747,28 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
         didDiscoverDescriptorsFor characteristic: CBCharacteristic,
         error: Error?
     ) {
+        if failIfForeignAttribute(
+            characteristic, expected: CBCharacteristic.self,
+            peripheral: peripheral, location: "descriptors"
+        ) {
+            return
+        }
         if let error = error {
             NSLog("Error: \(error)")
         }
         let peripheralUUIDString: String = peripheral.uuidAsString()
-        let serviceUUIDString: String =
-            (characteristic.service?.uuid.uuidString)!
+        // CoreBluetooth declares the owning service weak and nullable, and it
+        // can be gone by the time this event arrives, for example once the
+        // attribute tree was invalidated. The event is ignored rather than
+        // force-unwrapped, so the pending retrieveServices may not settle
+        // until the peripheral disconnects.
+        guard let owningService = characteristic.service else {
+            NSLog(
+                "Descriptors discovered for characteristic \(characteristic.uuid.uuidString) with no owning service; ignored"
+            )
+            return
+        }
+        let serviceUUIDString: String = owningService.uuid.uuidString
 
         if SwiftBleManager.verboseLogging {
             NSLog(
@@ -1731,7 +1785,7 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
 
             if characteristicsLatch.isEmpty {
                 // All characteristics for this service have been checked
-                servicesLatch.remove(characteristic.service!)
+                servicesLatch.remove(owningService)
                 retrieveServicesLatches[peripheralUUIDString] = servicesLatch
 
                 if servicesLatch.isEmpty {
