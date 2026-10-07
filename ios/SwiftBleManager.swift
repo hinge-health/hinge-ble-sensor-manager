@@ -7,6 +7,10 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
 {
     static var shared: SwiftBleManager?
     static var sharedManager: CBCentralManager?
+    // The queue sharedManager delivers its delegate callbacks on, kept with
+    // it because a manager reused through state restoration keeps the queue
+    // it was created with.
+    private static var sharedManagerQueue: DispatchQueue?
 
     private weak var bleManager: BleManager?
     private var manager: CBCentralManager?
@@ -29,12 +33,14 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
 
     private var retrieveServicesLatches: [String: Set<CBService>]
     private var characteristicsLatches: [String: Set<CBCharacteristic>]
-    // Peripherals whose current discovery failed as a stale GATT cache. Its
-    // replies still in flight start no further requests, since on a stale
-    // table every reply is another chance for CoreBluetooth to route it to
-    // the wrong attribute and abort. Cleared when a services reply arrives
-    // that a pending call is waiting for. Touched only on the delegate
-    // queue, like the latches.
+    // Peripherals whose current discovery was abandoned, because it failed
+    // as a stale GATT cache or ran out of time. Its latch is dropped when it
+    // is marked, so its replies still in flight settle nothing, and the mark
+    // stops them from starting further requests. Those requests would
+    // interleave with a retry's discovery, and on a stale table every reply
+    // is another chance for CoreBluetooth to route it to the wrong attribute
+    // and abort. Cleared when a services reply arrives that a pending call is
+    // waiting for. Touched only on the delegate queue, like the latches.
     private var abandonedDiscoveries = Set<String>()
 
     private let serialQueue = DispatchQueue(label: "BleManager.serialQueue")
@@ -392,6 +398,7 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
                     options: initOptions
                 )
                 SwiftBleManager.sharedManager = manager
+                SwiftBleManager.sharedManagerQueue = queue
             }
         } else {
             manager = CBCentralManager(
@@ -400,6 +407,7 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
                 options: initOptions
             )
             SwiftBleManager.sharedManager = manager
+            SwiftBleManager.sharedManagerQueue = queue
         }
 
         callback([])
@@ -653,25 +661,35 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
     // the timeout armed by the latest of them runs out, so the JS promise
     // settles instead of waiting on a discovery CoreBluetooth never
     // completes. Each call restarts the timeout, and the calls pending on a
-    // peripheral settle together, as they do when discovery completes. Only
-    // the callbacks are answered; the latches belong to the delegate queue,
-    // and the next retrieveServices on the peripheral replaces its latch.
+    // peripheral settle together, as they do when discovery completes. The
+    // timer runs on the delegate queue, ordered with the discovery replies,
+    // and retires the timed-out discovery the way a stale failure does: its
+    // latch is dropped and it is marked abandoned, so it sends no further
+    // requests and is not finished in the background. This relies on
+    // CoreBluetooth answering a peripheral's discovery requests in the order
+    // they were sent: then all of its late replies arrive before a retry's
+    // services reply and find no latch to settle. If a retry were answered
+    // ahead of them, they could still settle it, as with overlapping calls.
     private func armRetrieveServicesTimeout(
         forKey key: String,
         attempt: Int,
         after timeout: TimeInterval
     ) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
+        let delegateQueue =
+            SwiftBleManager.sharedManagerQueue ?? DispatchQueue.main
+        delegateQueue.asyncAfter(deadline: .now() + timeout) {
             [weak self] in
             guard let self = self else { return }
             let message =
                 "retrieveServices timed out after \(Int(timeout * 1000)) ms for peripheral \(key)"
-            // Checked and answered in one step, so a call queued in between
-            // is never failed by this older timer.
+            // Checked, retired and answered in one step, so a call queued in
+            // between is never failed by this older timer.
             self.serialQueue.sync {
                 guard self.retrieveServicesAttempts[key] == attempt,
                     self.retrieveServicesCallbacks[key] != nil
                 else { return }
+                self.retrieveServicesLatches.removeValue(forKey: key)
+                self.abandonedDiscoveries.insert(key)
                 NSLog("%@", message)
                 self.invokeAndClearDictionary_THREAD_UNSAFE(
                     &self.retrieveServicesCallbacks,
@@ -1690,11 +1708,12 @@ public class SwiftBleManager: NSObject, CBCentralManagerDelegate,
 
         let key = peripheral.uuidAsString()
         if abandonedDiscoveries.contains(key) {
-            // This peripheral's last discovery failed as stale. A services
-            // reply no pending call is waiting for answers a request that
-            // failure already settled, and another round of requests on the
-            // same tree would only give CoreBluetooth more replies to route
-            // to the wrong attribute.
+            // This peripheral's last discovery was abandoned, as stale or
+            // timed out. A services reply no pending call is waiting for
+            // answers a request that was already settled. Another round of
+            // requests would be traffic nobody waits for, and on a stale
+            // table more replies for CoreBluetooth to route to the wrong
+            // attribute.
             let isAwaited = serialQueue.sync {
                 retrieveServicesCallbacks[key] != nil
             }

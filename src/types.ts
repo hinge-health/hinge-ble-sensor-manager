@@ -85,8 +85,10 @@ export interface StartOptions {
    * [iOS only] Milliseconds after which a pending `retrieveServices` call is
    * rejected with {@link BleManagerErrorCode.RetrieveServicesTimeout}. Each
    * call restarts the timeout for its peripheral, and calls pending on the
-   * same peripheral settle together. By default there is no timeout and the
-   * call waits for CoreBluetooth to finish discovery.
+   * same peripheral settle together. A discovery that times out is abandoned
+   * rather than finished in the background, so allow enough time for a full
+   * discovery and call `retrieveServices` again to retry. By default there
+   * is no timeout and the call waits for CoreBluetooth to finish discovery.
    */
   retrieveServicesTimeout?: number;
   /**

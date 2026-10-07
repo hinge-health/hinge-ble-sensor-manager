@@ -38,7 +38,7 @@ The parameter is optional the configuration keys are:
 - `restoreIdentifierKey` - `String` - [iOS only] Unique key to use for CoreBluetooth state restoration
 - `queueIdentifierKey` - `String` - [iOS only] Unique key to use for a queue identifier on which CoreBluetooth events will be dispatched
 - `discoverIncludedServices` - `Boolean` - [iOS only] Whether `retrieveServices` also discovers each service's included services. Defaults to `true`. The library doesn't report included services, and with `false` each service's characteristics are discovered once instead of twice. It also leaves out one of the requests whose reply CoreBluetooth can deliver to the wrong attribute, and crash on, when its cached attribute table is stale.
-- `retrieveServicesTimeout` - `Number` - [iOS only] Milliseconds after which a pending `retrieveServices` call is rejected (see its errors). Each call restarts the timeout for its peripheral, and calls pending on the same peripheral settle together. By default there is no timeout and the call waits for CoreBluetooth to finish discovery.
+- `retrieveServicesTimeout` - `Number` - [iOS only] Milliseconds after which a pending `retrieveServices` call is rejected (see its errors). Each call restarts the timeout for its peripheral, and calls pending on the same peripheral settle together. A discovery that times out is abandoned rather than finished in the background, so allow enough time for a full discovery and call `retrieveServices` again to retry. By default there is no timeout and the call waits for CoreBluetooth to finish discovery.
 - `forceLegacy` - `Boolean` - [Android only] Force to use the LegacyScanManager
 
 **Examples**
